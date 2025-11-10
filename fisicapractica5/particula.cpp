@@ -86,7 +86,7 @@ Particula Particula::fusionarcon(const Particula &otra) const
     double nuevaMasa = masa + otra.masa;
     Vector2D nuevaVelocidad = (velocidad * masa + otra.velocidad * otra.masa)/nuevaMasa;
 
-    Vector2D nuevaPos = (posicion * masa * radio + otra.masa)/nuevaMasa;
+    Vector2D nuevaPos = (posicion * masa + otra.posicion * otra.masa) / nuevaMasa;
 
     double nuevoRadio = sqrt(radio * radio + otra.radio * otra.radio);
 
