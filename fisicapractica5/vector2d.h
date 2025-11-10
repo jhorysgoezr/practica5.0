@@ -5,10 +5,9 @@ using namespace std;
 
 class Vector2D
 {
-private:
+public:
     double x;
     double y;
-public:
     Vector2D();
     Vector2D(double x = 0.0, double y = 0.0);
 
