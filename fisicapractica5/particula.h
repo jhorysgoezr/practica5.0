@@ -1,6 +1,8 @@
 #ifndef PARTICULA_H
 #define PARTICULA_H
 
+#include <cmath>
+
 #include "vector2d.h"
 
 class Particula

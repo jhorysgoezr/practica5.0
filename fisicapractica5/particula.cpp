@@ -31,6 +31,11 @@ Vector2D Particula::getVelocidad() const
     return velocidad;
 }
 
+bool Particula::estaActiva() const
+{
+    return activa;
+}
+
 void Particula::setPosicion(const Vector2D& pos)
 {
     posicion = pos;
@@ -68,6 +73,24 @@ void Particula::resolverColisionConPared(double anchoCaja, double altoCaja)
     if (posicion.y - radio <= 0 || posicion.y + radio >= altoCaja){
         velocidad.y = -velocidad.y;
     }
+}
+
+bool Particula::colisionacon(const Particula &otra) const
+{
+    double distancia = posicion.distancia(otra.posicion);
+    return distancia <= (radio + otra.radio);
+}
+
+Particula Particula::fusionarcon(const Particula &otra) const
+{
+    double nuevaMasa = masa + otra.masa;
+    Vector2D nuevaVelocidad = (velocidad * masa + otra.velocidad * otra.masa)/nuevaMasa;
+
+    Vector2D nuevaPos = (posicion * masa * radio + otra.masa)/nuevaMasa;
+
+    double nuevoRadio = sqrt(radio * radio + otra.radio * otra.radio);
+
+    return Particula(id, nuevoRadio, nuevaMasa, nuevaPos, nuevaVelocidad);
 }
 
 
