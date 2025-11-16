@@ -2,14 +2,16 @@
 #define OBSTACULO_H
 
 #include "vector2d.h"
-#include "particula.h"
+
+class Particula;
 
 class Obstaculo
 {
 private:
     int id;
-    Vector2D posicion;
+    Vector2D posicion;  // centro del cuadrado
     double lado;
+
 public:
     Obstaculo(int id, const Vector2D& pos, double lado);
 
@@ -18,7 +20,6 @@ public:
     double getLado() const;
 
     bool colisionaCon(const Particula& p) const;
-
     Vector2D calcularNormalImpacto(const Particula& p) const;
 };
 
