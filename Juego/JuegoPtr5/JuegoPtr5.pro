@@ -18,7 +18,8 @@ SOURCES += \
     obstaculodestructible.cpp \
     particula.cpp \
     proyectil.cpp \
-    vector2d.cpp
+    vector2d.cpp \
+    vistajuego.cpp
 
 HEADERS += \
     caja.h \
@@ -29,10 +30,10 @@ HEADERS += \
     obstaculodestructible.h \
     particula.h \
     proyectil.h \
-    vector2d.h
+    vector2d.h \
+    vistajuego.h
 
-FORMS += \
-    mainwindow.ui
+FORMS +=
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

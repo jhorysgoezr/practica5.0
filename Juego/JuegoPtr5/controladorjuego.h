@@ -26,7 +26,6 @@ private:
     double dt;
     QTimer* timer;
 
-    // Métodos privados
     double calcularDanio(Proyectil* p);
     void procesarColisiones();
 
