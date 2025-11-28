@@ -19,7 +19,6 @@ public:
     Particula(int id, double radio, double masa,
               const Vector2D& pos, const Vector2D& vel);
 
-    // Getters / setters básicos
     int getId() const;
     double getRadio() const;
     double getMasa() const;

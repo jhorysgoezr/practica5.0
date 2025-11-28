@@ -26,6 +26,12 @@ private:
     double dt;
     QTimer* timer;
 
+    Vector2D gravedad;
+
+    double tiempoMaximoTurno;
+    double tiempoTranscurrido;
+    std::vector<int> obstaculosImpactados;
+
     double calcularDanio(Proyectil* p);
     void procesarColisiones();
 
@@ -52,8 +58,12 @@ public:
 
 signals:
     void turnoFinalizado();
-    void juegoTerminado(Jugador* ganador);
+
+    void actualizarVista();
+
     void obstaculoDestruido(int idObstaculo);
+
+    void juegoTerminado(Jugador* ganador);
 };
 
 #endif // CONTROLADORJUEGO_H

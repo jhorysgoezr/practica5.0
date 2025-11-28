@@ -79,3 +79,11 @@ double Proyectil::calcularMomentoImpacto() const
 {
     return masa * velocidad.magnitud();
 }
+
+void Proyectil::aplicarGravedad(double dt, const Vector2D& gravedad)
+{
+    // Solo si está activo
+    if (activo) {
+        velocidad += gravedad * dt;
+    }
+}

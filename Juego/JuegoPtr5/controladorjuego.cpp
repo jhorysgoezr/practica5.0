@@ -4,8 +4,10 @@
 ControladorJuego::ControladorJuego(Caja* caja, double dt, double e, double factorDanio)
     : caja(caja), dt(dt), coeficienteRestitucion(e), factorDanio(factorDanio),
     jugador1(nullptr), jugador2(nullptr), jugadorActual(nullptr),
-    proyectilActivo(nullptr), timer(nullptr)
+    proyectilActivo(nullptr), timer(nullptr), tiempoMaximoTurno(7.0), tiempoTranscurrido(0.0)
 {
+    gravedad = Vector2D(0.0, 98.0);
+
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &ControladorJuego::actualizar);
 }
@@ -43,6 +45,8 @@ void ControladorJuego::lanzarProyectil(double angulo, double velocidad)
         return;
     }
 
+    obstaculosImpactados.clear();
+
     double masa = 5.0;
     double radio = 5.0;
 
@@ -56,58 +60,120 @@ void ControladorJuego::lanzarProyectil(double angulo, double velocidad)
 
 void ControladorJuego::actualizar()
 {
-    if (!proyectilActivo || !proyectilActivo->estaActivo()) {
+    if (proyectilActivo && proyectilActivo->estaActivo()) {
+        tiempoTranscurrido += dt;
+
+        if (tiempoTranscurrido >= tiempoMaximoTurno) {
+            proyectilActivo->desactivar();
+        }
+
+        proyectilActivo->aplicarGravedad(dt, gravedad);
+
+        proyectilActivo->mover(dt);
+
+        procesarColisiones();
+
+        emit actualizarVista();
+
+    } else {
         timer->stop();
+
+        tiempoTranscurrido = 0.0;
+
+        if (verificarVictoria()) {
+            emit juegoTerminado(getJugadorGanador());
+            return;
+        }
+
         cambiarTurno();
-        return;
-    }
 
-    proyectilActivo->mover(dt);
-
-    procesarColisiones();
-
-    if (proyectilActivo->getVelocidad().magnitud() < 0.5) {
-        proyectilActivo->desactivar();
+        delete proyectilActivo;
+        proyectilActivo = nullptr;
     }
 }
 
 void ControladorJuego::procesarColisiones()
 {
-    if (!proyectilActivo || !proyectilActivo->estaActivo()) return;
+    if (!proyectilActivo || !proyectilActivo->estaActivo()) {
+        return;
+    }
 
+    // 1. Colisión Elástica con Paredes de la Caja
     if (proyectilActivo->colisionaConPared(caja->getAncho(), caja->getAlto())) {
         proyectilActivo->resolverColisionConPared(caja->getAncho(), caja->getAlto());
     }
 
+    // 2. Colisión Inelástica y Daño con Obstáculos Destructibles
     for (auto it = obstaculos.begin(); it != obstaculos.end(); ) {
         ObstaculoDestructible* obs = *it;
 
-        if (obs->getIdJugadorPropietario() != proyectilActivo->getIdJugador()) {
-            if (proyectilActivo->colisionaConObstaculo(*obs)) {
+        // Colisión solo si es infraestructura del jugador rival
+        if (obs->getIdJugadorPropietario() != proyectilActivo->getIdJugador() &&
+            proyectilActivo->colisionaConObstaculo(*obs))
+        {
+            // Verificar si ya impactó este obstáculo en este turno
+            int idObs = obs->getId();
+            bool yaImpactado = false;
+            for (int id : obstaculosImpactados) {
+                if (id == idObs) {
+                    yaImpactado = true;
+                    break;
+                }
+            }
+
+            // Solo aplicar daño si NO ha impactado antes este obstáculo
+            if (!yaImpactado) {
+                // A. Cálculo de Daño y Aplicación
                 double danio = calcularDanio(proyectilActivo);
                 obs->recibirDanio(danio);
 
-                proyectilActivo->resolverColisionObstaculo(*obs, coeficienteRestitucion);
+                // Registrar que ya impactó este obstáculo
+                obstaculosImpactados.push_back(idObs);
 
+                // B. Si el obstáculo está destruido, eliminarlo
                 if (obs->estaDestruido()) {
                     emit obstaculoDestruido(obs->getId());
                     delete obs;
                     it = obstaculos.erase(it);
-                    continue;
+
+                    // Verificar victoria después de destruir un obstáculo
+                    if (verificarVictoria()) {
+                        proyectilActivo->desactivar();
+                        return;
+                    }
+                } else {
+                    ++it;
                 }
+            } else {
+                ++it;
             }
+
+            // C. Colisión Inelástica con coeficiente de restitución
+            proyectilActivo->resolverColisionObstaculo(*obs, coeficienteRestitucion);
+
+            return;
+        } else {
+            ++it;
         }
-        ++it;
+    }
+
+    // 3. Condición de Detención (velocidad muy baja y cerca del suelo)
+    if (proyectilActivo->getVelocidad().magnitud() < 1.0 &&
+        proyectilActivo->getPosicion().y >= caja->getAlto() - proyectilActivo->getRadio() - 5.0)
+    {
+        proyectilActivo->desactivar();
+    }
+
+    // 4. Desactivar si sale de los límites (seguridad adicional)
+    Vector2D pos = proyectilActivo->getPosicion();
+    if (pos.x < -50 || pos.x > caja->getAncho() + 50 ||
+        pos.y < -50 || pos.y > caja->getAlto() + 50) {
+        proyectilActivo->desactivar();
     }
 }
 
 void ControladorJuego::cambiarTurno()
 {
-    if (verificarVictoria()) {
-        emit juegoTerminado(getJugadorGanador());
-        return;
-    }
-
     if (jugadorActual == jugador1) {
         jugadorActual = jugador2;
     } else {
@@ -131,12 +197,13 @@ bool ControladorJuego::verificarVictoria()
         }
     }
 
+    // Un jugador gana cuando destruye toda la infraestructura del rival
     if (obstaculosJ2 == 0 && jugador1) {
-        jugador1->eliminar();
+        jugador2->eliminar();
         return true;
     }
     if (obstaculosJ1 == 0 && jugador2) {
-        jugador2->eliminar();
+        jugador1->eliminar();
         return true;
     }
 
@@ -163,6 +230,12 @@ Jugador* ControladorJuego::getJugador2() const { return jugador2; }
 
 double ControladorJuego::calcularDanio(Proyectil* p)
 {
-    double momentoImpacto = p->calcularMomentoImpacto();
-    return factorDanio * momentoImpacto;
+    // Velocidad de impacto (magnitud del vector velocidad)
+    double V_impacto = p->getVelocidad().magnitud();
+    double Masa_proyectil = p->getMasa();
+
+    // Daño = factor_constante × masa × velocidad
+    double danio = factorDanio * Masa_proyectil * V_impacto;
+
+    return danio;
 }

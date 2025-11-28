@@ -26,6 +26,10 @@ Proyectil Jugador::crearProyectil(double angulo, double velocidad,
     double vx = velocidad * std::cos(anguloRad);
     double vy = -velocidad * std::sin(anguloRad);
 
+    if (id == 2) {
+        vx = -vx;
+    }
+
     Vector2D velocidadInicial(vx, vy);
 
     static int contadorProyectiles = 0;

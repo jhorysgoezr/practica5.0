@@ -41,6 +41,8 @@ public:
     void resolverColisionObstaculo(const ObstaculoDestructible& obs, double e);
 
     double calcularMomentoImpacto() const;
+
+    void aplicarGravedad(double dt, const Vector2D& gravedad);
 };
 
 #endif // PROYECTIL_H
